@@ -78,6 +78,7 @@
 #include "parrot_neuron.h"
 #include "pp_pop_psc_delta.h"
 #include "pp_psc_delta.h"
+#include "pp_psc_delta_Nessler.h"
 #include "siegert_neuron.h"
 #include "gif_psc_exp.h"
 #include "gif_psc_exp_multisynapse.h"
@@ -214,6 +215,7 @@ ModelsModule::init( SLIInterpreter* )
   kernel().model_manager.register_node_model< parrot_neuron >(
     "parrot_neuron" );
   kernel().model_manager.register_node_model< pp_psc_delta >( "pp_psc_delta" );
+  kernel().model_manager.register_node_model< pp_psc_delta_Nessler >( "pp_psc_delta_Nessler" );
   kernel().model_manager.register_node_model< pp_pop_psc_delta >(
     "pp_pop_psc_delta" );
   kernel().model_manager.register_node_model< gif_psc_exp >( "gif_psc_exp" );
