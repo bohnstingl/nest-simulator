@@ -86,9 +86,15 @@ extern const Name c_3;       //!< Specific to stochastic neuron pp_psc_delta
 extern const Name C_m;       //!< Membrane capacitance
 extern const Name Ca;        //!< Calcium concentration
 extern const Name calibrate; //!< Command to calibrate the neuron (sli_neuron)
+
+
+
 extern const Name is_excitable; //!< Specific to stochastic neuron pp_psc_delta_Nessler
 extern const Name t_excitability_dec; //!< Specific to stochastic neuron pp_psc_delta_Nessler
-extern const Name excitability_base_line; //!< Specific to stochastic neuron pp_psc_delta_Nessler
+extern const Name baseline; //! Specific for Nessler things
+extern const Name sigma;
+
+
 extern const Name calibrate_node;           //!< Command to calibrate the neuron (sli_neuron)
 extern const Name capacity; //!< model paramater
 extern const Name clear;    //!< used for ArchivingNode

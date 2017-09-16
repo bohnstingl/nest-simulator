@@ -126,6 +126,7 @@
 #include "static_connection.h"
 #include "static_connection_hom_w.h"
 #include "stdp_connection.h"
+#include "stdp_connection_Nessler_Simple.h"
 #include "stdp_connection_facetshw_hom.h"
 #include "stdp_connection_facetshw_hom_impl.h"
 #include "stdp_connection_hom.h"
@@ -465,6 +466,10 @@ ModelsModule::init( SLIInterpreter* )
     .model_manager
     .register_connection_model< STDPConnection< TargetIdentifierPtrRport > >(
       "stdp_synapse" );
+  kernel()
+    .model_manager
+    .register_connection_model< STDPConnectionNesslerSimple< TargetIdentifierPtrRport > >(
+      "stdp_synapse_Nessler_Simple" );
   kernel()
     .model_manager
     .register_connection_model< STDPConnection< TargetIdentifierIndex > >(

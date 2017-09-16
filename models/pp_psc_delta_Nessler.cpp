@@ -82,18 +82,13 @@ nest::pp_psc_delta_Nessler::Parameters_::Parameters_()
   , is_excitable_( 0 )
   , t_excitability_dec_( 0.0) // ms
   , eta_ (0.0)
-  , excitability_base_line_ (0.0)
-  , tau_sfa_( 34.0 ) // ms
-  , q_sfa_( 0.0 )    // mV, reasonable default is 7 mV [2]
-  , multi_param_( 1 )
+  , baseline_ (0.0)
   , c_1_( 0.0 )             // Hz / mV
   , c_2_( 1.238 )           // Hz / mV
   , c_3_( 0.25 )            // 1.0 / mV
   , I_e_( 0.0 )             // pA
   , t_ref_remaining_( 0.0 ) // ms
 {
-  tau_sfa_.clear();
-  q_sfa_.clear();
 }
 
 nest::pp_psc_delta_Nessler::State_::State_()
@@ -103,7 +98,6 @@ nest::pp_psc_delta_Nessler::State_::State_()
   , r_( 0 )
   , initialized_( false )
 {
-  q_elems_.clear();
 }
 
 /* ----------------------------------------------------------------
@@ -123,34 +117,12 @@ nest::pp_psc_delta_Nessler::Parameters_::get( DictionaryDatum& d ) const
   def< bool >( d, names::is_excitable, is_excitable_);
   def< double >( d, names::t_excitability_dec, t_excitability_dec_);
   def< double >( d, names::eta, eta_);
-  def< double >( d, names::excitability_base_line, excitability_base_line_);
+  def< double >( d, names::baseline, baseline_);
 
   def< double >( d, names::c_1, c_1_ );
   def< double >( d, names::c_2, c_2_ );
   def< double >( d, names::c_3, c_3_ );
   def< double >( d, names::t_ref_remaining, t_ref_remaining_ );
-
-  if ( multi_param_ )
-  {
-    ArrayDatum tau_sfa_list_ad( tau_sfa_ );
-    def< ArrayDatum >( d, names::tau_sfa, tau_sfa_list_ad );
-
-    ArrayDatum q_sfa_list_ad( q_sfa_ );
-    def< ArrayDatum >( d, names::q_sfa, q_sfa_list_ad );
-  }
-  else
-  {
-    if ( tau_sfa_.size() == 0 )
-    {
-      def< double >( d, names::tau_sfa, 0 );
-      def< double >( d, names::q_sfa, 0 );
-    }
-    else
-    {
-      def< double >( d, names::tau_sfa, tau_sfa_[ 0 ] );
-      def< double >( d, names::q_sfa, q_sfa_[ 0 ] );
-    }
-  }
 }
 
 void
@@ -171,33 +143,7 @@ nest::pp_psc_delta_Nessler::Parameters_::set( const DictionaryDatum& d )
   updateValue< double >( d, names::t_ref_remaining, t_ref_remaining_ );
   updateValue< double >( d, names::t_excitability_dec, t_excitability_dec_);
   updateValue< double >( d, names::eta, eta_);
-  updateValue< double >( d, names::excitability_base_line, excitability_base_line_);
-
-  try
-  {
-    updateValue< std::vector< double > >( d, names::tau_sfa, tau_sfa_ );
-    updateValue< std::vector< double > >( d, names::q_sfa, q_sfa_ );
-  }
-  catch ( TypeMismatch e )
-  {
-    multi_param_ = 0;
-    double tau_sfa_temp_;
-    double q_sfa_temp_;
-    updateValue< double >( d, names::tau_sfa, tau_sfa_temp_ );
-    updateValue< double >( d, names::q_sfa, q_sfa_temp_ );
-    tau_sfa_.push_back( tau_sfa_temp_ );
-    q_sfa_.push_back( q_sfa_temp_ );
-  }
-
-
-  if ( tau_sfa_.size() != q_sfa_.size() )
-  {
-    throw BadProperty( String::compose(
-      "'tau_sfa' and 'q_sfa' need to have the same dimension.\nSize of "
-      "tau_sfa: %1\nSize of q_sfa: %2",
-      tau_sfa_.size(),
-      q_sfa_.size() ) );
-  }
+  updateValue< double >( d, names::baseline, baseline_);
 
   if ( c_m_ <= 0 )
   {
@@ -218,14 +164,6 @@ nest::pp_psc_delta_Nessler::Parameters_::set( const DictionaryDatum& d )
   if ( tau_m_ <= 0 )
   {
     throw BadProperty( "All time constants must be strictly positive." );
-  }
-
-  for ( unsigned int i = 0; i < tau_sfa_.size(); i++ )
-  {
-    if ( tau_sfa_[ i ] <= 0 )
-    {
-      throw BadProperty( "All time constants must be strictly positive." );
-    }
   }
 
   if ( t_ref_remaining_ < 0 )
@@ -327,12 +265,6 @@ nest::pp_psc_delta_Nessler::calibrate()
   // initializing internal state
   if ( not S_.initialized_ )
   {
-    for ( unsigned int i = 0; i < P_.tau_sfa_.size(); i++ )
-    {
-      V_.Q33_.push_back( std::exp( -V_.h_ / P_.tau_sfa_[ i ] ) );
-      S_.q_elems_.push_back( 0.0 );
-    }
-
     V_.curr_excitability_dec_ = Time( Time::ms(P_.t_excitability_dec_ ) ).get_steps();
 
     S_.initialized_ = true;
@@ -462,12 +394,6 @@ nest::pp_psc_delta_Nessler::update( Time const& origin, const long from, const l
           }
 
 
-          for ( unsigned int i = 0; i < S_.q_elems_.size(); i++ )
-          {
-            S_.q_elems_[ i ] += P_.q_sfa_[ i ] * n_spikes;
-          }
-
-
           // And send the spike event
           SpikeEvent se;
           se.set_multiplicity( n_spikes );
@@ -478,7 +404,7 @@ nest::pp_psc_delta_Nessler::update( Time const& origin, const long from, const l
           for ( unsigned int i = 0; i < n_spikes; i++ )
           {
             set_spiketime( Time::step( origin.get_steps() + lag + 1 ) );
-            S_.q_ += P_.eta_ * (std::exp(-(S_.q_ - P_.excitability_base_line_)) - 1.0);
+            S_.q_ += P_.eta_ * (std::exp(-(S_.q_ - P_.baseline_)) - 1.0);
           }
 
           // Reset the potential if applicable

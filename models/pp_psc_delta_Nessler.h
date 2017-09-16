@@ -253,17 +253,7 @@ private:
     double eta_;
 
     /** This is the excitability baseline */
-    double excitability_base_line_;
-
-    /** List of adaptive threshold time constant in ms (for multi adaptation
-     * version). */
-    std::vector< double > tau_sfa_;
-
-    /** Adaptive threshold jump in mV (for multi adaptation version). */
-    std::vector< double > q_sfa_;
-
-    /** indicates multi parameter adaptation model **/
-    bool multi_param_;
+    double baseline_;
 
     /** Slope of the linear part of transfer function. */
     double c_1_;
@@ -297,9 +287,6 @@ private:
     //! This is the membrane potential RELATIVE TO RESTING POTENTIAL.
     double y3_;
     double q_; //!< This is the change of the 'threshold' due to adaptation.
-
-    //! Vector of adaptation parameters. by Hesam
-    std::vector< double > q_elems_;
 
     int r_; //!< Number of refractory steps remaining
 
