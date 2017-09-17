@@ -249,6 +249,12 @@ private:
     /** This is the fixed time at which the excitability is decrease */
     double t_excitability_dec_;
 
+    /** This is the excitability threshold */
+    double E_sfa_;
+  
+    /** This is the maximum excitability */
+    double E_sfa_Max_;
+
     /** This is the learning rate for the excitability update */
     double eta_;
 
@@ -286,7 +292,6 @@ private:
     double y0_; //!< This is piecewise constant external current
     //! This is the membrane potential RELATIVE TO RESTING POTENTIAL.
     double y3_;
-    double q_; //!< This is the change of the 'threshold' due to adaptation.
 
     int r_; //!< Number of refractory steps remaining
 
@@ -347,13 +352,6 @@ private:
   get_V_m_() const
   {
     return S_.y3_;
-  }
-
-  //! Read out the adaptive threshold potential
-  double
-  get_E_sfa_() const
-  {
-    return S_.q_;
   }
 
   // ----------------------------------------------------------------

@@ -176,6 +176,7 @@ extern const Name E_rev_NMDA;   //!< specific to Hill & Tononi 2005
 extern const Name E_rev_T;      //!< specific to Hill & Tononi 2005
 extern const Name E_rr;         //!< Other adaptation
 extern const Name E_sfa;        //!< Other adaptation
+extern const Name E_sfa_Max;    //!< Other adaptation
 extern const Name element_type; //!< Node type
 extern const Name elementsize;  //!< Used in genericmodel
 extern const Name epoch;

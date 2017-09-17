@@ -65,7 +65,6 @@ RecordablesMap< pp_psc_delta_Nessler >::create()
 {
   // use standard names whereever you can for consistency!
   insert_( names::V_m, &pp_psc_delta_Nessler::get_V_m_ );
-  insert_( names::E_sfa, &pp_psc_delta_Nessler::get_E_sfa_ );
 }
 
 /* ----------------------------------------------------------------
@@ -75,12 +74,14 @@ RecordablesMap< pp_psc_delta_Nessler >::create()
 nest::pp_psc_delta_Nessler::Parameters_::Parameters_()
   : tau_m_( 10.0 )    // ms
   , c_m_( 250.0 )     // pF
-  , dead_time_( 1.0 ) // ms
+  , dead_time_( 2.0 ) // ms
   , dead_time_random_( 0 )
   , dead_time_shape_( 1 )
   , with_reset_( 1 )
   , is_excitable_( 0 )
-  , t_excitability_dec_( 0.0) // ms
+  , t_excitability_dec_( 2.0) // ms
+  , E_sfa_( 0.0 )
+  , E_sfa_Max_ ( 0.0 )
   , eta_ (0.0)
   , baseline_ (0.0)
   , c_1_( 0.0 )             // Hz / mV
@@ -94,7 +95,6 @@ nest::pp_psc_delta_Nessler::Parameters_::Parameters_()
 nest::pp_psc_delta_Nessler::State_::State_()
   : y0_( 0.0 )
   , y3_( 0.0 )
-  , q_( 0.0 )
   , r_( 0 )
   , initialized_( false )
 {
@@ -118,6 +118,8 @@ nest::pp_psc_delta_Nessler::Parameters_::get( DictionaryDatum& d ) const
   def< double >( d, names::t_excitability_dec, t_excitability_dec_);
   def< double >( d, names::eta, eta_);
   def< double >( d, names::baseline, baseline_);
+  def< double >( d, names::E_sfa, E_sfa_);
+  def< double >( d, names::E_sfa_Max, E_sfa_Max_);
 
   def< double >( d, names::c_1, c_1_ );
   def< double >( d, names::c_2, c_2_ );
@@ -137,6 +139,8 @@ nest::pp_psc_delta_Nessler::Parameters_::set( const DictionaryDatum& d )
   updateValue< long >( d, names::dead_time_shape, dead_time_shape_ );
   updateValue< bool >( d, names::with_reset, with_reset_ );
   updateValue< bool >( d, names::is_excitable, is_excitable_ );
+  updateValue< double >( d, names::E_sfa, E_sfa_);
+  updateValue< double >( d, names::E_sfa_Max, E_sfa_Max_);
   updateValue< double >( d, names::c_1, c_1_ );
   updateValue< double >( d, names::c_2, c_2_ );
   updateValue< double >( d, names::c_3, c_3_ );
@@ -181,14 +185,12 @@ void
 nest::pp_psc_delta_Nessler::State_::get( DictionaryDatum& d, const Parameters_& ) const
 {
   def< double >( d, names::V_m, y3_ );  // Membrane potential
-  def< double >( d, names::E_sfa, q_ ); // Adaptive threshold potential
 }
 
 void
 nest::pp_psc_delta_Nessler::State_::set( const DictionaryDatum& d, const Parameters_& )
 {
   updateValue< double >( d, names::V_m, y3_ );
-  updateValue< double >( d, names::E_sfa, q_ );
   // vectors of the state should be initialized with new parameter set.
   initialized_ = false;
 }
@@ -343,7 +345,18 @@ nest::pp_psc_delta_Nessler::update( Time const& origin, const long from, const l
         {
           //Decrease the excitability and reset the time
           V_.curr_excitability_dec_ = Time( Time::ms(P_.t_excitability_dec_ ) ).get_steps();
-          S_.q_ -= P_.eta_;
+          //std::cout << "decreasing excitability from " << P_.E_sfa_ << std::endl ;
+          if((P_.E_sfa_ - P_.eta_) < 0.0)
+          {
+            P_.E_sfa_ = 0.0;
+          }
+          else
+          {
+            //double old = P_.E_sfa_;
+            P_.E_sfa_ -= P_.eta_;
+            //std::cout << "Decreased from " << old << " to " << P_.E_sfa_ << std::endl ;
+          }
+          //std::cout << "to " << P_.E_sfa_ << std::endl ;
         }
     }
 
@@ -357,7 +370,7 @@ nest::pp_psc_delta_Nessler::update( Time const& origin, const long from, const l
 
       double V_eff;
 
-      V_eff = S_.y3_ - S_.q_;
+      V_eff = S_.y3_ + P_.E_sfa_;
 
       double rate = ( P_.c_1_ * V_eff + P_.c_2_ * std::exp( P_.c_3_ * V_eff ) );
 
@@ -404,8 +417,17 @@ nest::pp_psc_delta_Nessler::update( Time const& origin, const long from, const l
           for ( unsigned int i = 0; i < n_spikes; i++ )
           {
             set_spiketime( Time::step( origin.get_steps() + lag + 1 ) );
-            S_.q_ += P_.eta_ * (std::exp(-(S_.q_ - P_.baseline_)) - 1.0);
           }
+
+          //Increase the excitability after each spike
+          //std::cout << "increasing excitability from " << P_.E_sfa_ << std::endl ;
+          //std::cout << "Baseline " << P_.baseline_ << std::endl ;
+          //std::cout << "Update term " << P_.eta_ * (std::exp(-(P_.E_sfa_ - P_.baseline_)) - 1.0) << std::endl ;
+          //double old = P_.E_sfa_;
+          P_.E_sfa_ += P_.eta_ * (std::exp(-(P_.E_sfa_ - P_.baseline_)) - 1.0);
+          if(P_.E_sfa_ > P_.E_sfa_Max_)
+            P_.E_sfa_ = P_.E_sfa_Max_;
+          //std::cout << "Increase from " << old << " to " << P_.E_sfa_ << std::endl ;
 
           // Reset the potential if applicable
           if ( P_.with_reset_ )

@@ -151,6 +151,7 @@ const Name E_rev_NMDA( "E_rev_NMDA" );
 const Name E_rev_T( "E_rev_T" );
 const Name E_rr( "E_rr" );
 const Name E_sfa( "E_sfa" );
+const Name E_sfa_Max( "E_sfa_Max" );
 const Name element_type( "element_type" );
 const Name elementsize( "elementsize" );
 const Name epoch( "epoch" );
