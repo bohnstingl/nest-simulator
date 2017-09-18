@@ -220,6 +220,9 @@ STDPConnectionNesslerSimple< targetidentifierT >::send( Event& e,
   //   std::endl ;}
   double t_spike = e.get_stamp().get_ms();
   // t_lastspike_ = 0 initially
+  // t_lastspike is not reset when using nest.ResetNetwork
+
+  //std::cout << "Last spike time was " << t_lastspike << std::endl;
 
   // use accessor functions (inherited from Connection< >) to obtain delay and
   // target
@@ -243,29 +246,38 @@ STDPConnectionNesslerSimple< targetidentifierT >::send( Event& e,
   // facilitation due to post-synaptic spikes since last pre-synaptic spike
   double minus_dt;
   //std::cout << "Checking spikes of post synaptic " << std::endl ;
-  while ( start != finish )
+  if (start != finish)
   {
-    minus_dt = t_lastspike - ( start->t_ + dendritic_delay );
-    ++start;
-    if ( minus_dt == 0 )
-    {
-      continue;
-    }
-    else
-    {
-        //std::cout << "found time difference " << std::abs(minus_dt) << std::endl ;
-        //Check if time is within sigma
-        if(std::abs(minus_dt) <= sigma_)
+      //Depress synapse if there is no post synaptic spike
+      weight_ = depress_( weight_ );
+  }
+  else
+  {
+      while ( start != finish )
+      {
+        minus_dt = t_lastspike - ( start->t_ + dendritic_delay );
+        ++start;
+        if ( minus_dt == 0 )
         {
-            //std::cout << "old weight " << weight_ << std::endl ;
-            weight_ = facilitate_( weight_ );
-            //std::cout << "new weight " << weight_ << std::endl ;
+          continue;
         }
         else
         {
-            weight_ = depress_( weight_ );
+            //std::cout << "found time difference " << std::abs(minus_dt) << std::endl ;
+            //Check if time is within sigma
+            if(std::abs(minus_dt) <= sigma_)
+            {
+                //std::cout << "old weight " << weight_ << std::endl ;
+                weight_ = facilitate_( weight_ );
+                //std::cout << "new weight " << weight_ << std::endl ;
+            }
+            else
+            {
+                //std::cout << "here" << std::endl;
+                weight_ = depress_( weight_ );
+            }
         }
-    }
+      }
   }
 
   // depression due to new pre-synaptic spike
