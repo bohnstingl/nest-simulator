@@ -246,7 +246,7 @@ STDPConnectionNesslerSimple< targetidentifierT >::send( Event& e,
   // facilitation due to post-synaptic spikes since last pre-synaptic spike
   double minus_dt;
   //std::cout << "Checking spikes of post synaptic " << std::endl ;
-  if (start != finish)
+  if (start == finish)
   {
       //Depress synapse if there is no post synaptic spike
       weight_ = depress_( weight_ );
